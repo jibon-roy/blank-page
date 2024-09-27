@@ -22,6 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Toggle } from "@/components/ui/toggle";
+import Draggable from "react-draggable";
 
 export default function ArtBoard() {
   const [color, setColor] = useState("#000000");
@@ -148,8 +149,8 @@ export default function ArtBoard() {
         const ratio = window.devicePixelRatio || 1;
         canvas.width = window.innerWidth * ratio;
         canvas.height = window.innerHeight * ratio;
-        canvas.style.width = `${window.innerWidth}px`;
-        canvas.style.height = `${window.innerHeight}px`;
+        canvas.style.width = `${window.innerWidth - 15}px`;
+        canvas.style.height = `${window.innerHeight - 60}px`;
 
         // Set willReadFrequently attribute for optimization
         const ctx = canvas.getContext("2d", { willReadFrequently: true }); // Set willReadFrequently
@@ -221,6 +222,8 @@ export default function ArtBoard() {
     if (cursorType === "pencil" || cursorType === "eraser") {
       setIsDrawing(true);
       setLastPosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
+      setIsTyping(false);
+      setShowCursor(false);
       saveHistory(); // Save history before drawing
     } else if (cursorType === "text") {
       setIsTyping(true);
@@ -231,12 +234,12 @@ export default function ArtBoard() {
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
 
     if (ctx) {
       if (cursorType === "pencil") {
+        // Set the stroke style to the current color (assuming 'color' is set to black if you want black color)
         ctx.strokeStyle = color;
         ctx.lineWidth = lineWidth;
         ctx.lineCap = "round";
@@ -246,8 +249,10 @@ export default function ArtBoard() {
         ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
         ctx.stroke();
 
+        // Update last position for smooth drawing
         setLastPosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
       } else if (cursorType === "eraser") {
+        // Eraser functionality with white color
         ctx.strokeStyle = "white";
         ctx.lineWidth = lineWidth * 2; // Eraser size is double the pencil size
         ctx.lineCap = "round";
@@ -257,6 +262,7 @@ export default function ArtBoard() {
         ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
         ctx.stroke();
 
+        // Update last position for smooth erasing
         setLastPosition({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
       }
     }
@@ -276,10 +282,7 @@ export default function ArtBoard() {
         saveCanvasToLocalStorage(); // Save canvas content after clearing
       }
     }
-    const getDataFromLocalStroage = localStorage.getItem("canvasData");
-    if (getDataFromLocalStroage) {
-      localStorage.removeItem("canvasData");
-    }
+    // const getDataFromLocalStroage = localStorage.getItem("canvasData");
   };
 
   const undo = () => {
@@ -342,129 +345,135 @@ export default function ArtBoard() {
   };
 
   return (
-    <div className={`flex flex-col h-screen items-start justify-start p-2`}>
-      <div className="flex flex-wrap gap-2">
-        {/* Pencil Tool */}
-        <Button
-          variant={getButtonVariant("pencil")}
-          onClick={() => setCursorType("pencil")}
-        >
-          <Pencil className="mr-2 h-4 w-4" /> Pencil
-        </Button>
+    <div
+      className={`flex flex-col h-screen w-full items-start justify-start box-border`}
+    >
+      <Draggable>
+        <div className="bg-slate-300 p-2 rounded-lg fixed top-5 left-4">
+          <p className="italic text-center mb-2 font-semibold cursor-move">
+            Blank Page
+          </p>
 
-        {/* Text Tool */}
-        <Button
-          variant={getButtonVariant("text")}
-          onClick={() => setCursorType("text")}
-        >
-          <Type className="mr-2 h-4 w-4" /> Text
-        </Button>
+          <div className="grid  rounded-lg gap-2">
+            {/* Pencil Tool */}
+            <Button
+              variant={getButtonVariant("pencil")}
+              onClick={() => setCursorType("pencil")}
+            >
+              <Pencil className="mr-2 h-4 w-4" /> Pencil
+            </Button>
 
-        {/* Eraser Tool */}
-        <Button
-          variant={getButtonVariant("eraser")}
-          onClick={() => setCursorType("eraser")}
-        >
-          <Eraser className="mr-2 h-4 w-4" /> Eraser
-        </Button>
+            {/* Text Tool */}
+            <Button
+              variant={getButtonVariant("text")}
+              onClick={() => setCursorType("text")}
+            >
+              <Type className="mr-2 h-4 w-4" /> Text
+            </Button>
 
-        {/* Bold Toggle */}
-        <Toggle pressed={isBold} onPressedChange={setIsBold} className="ml-2">
-          <Bold className="mr-2 h-4 w-4" />
-        </Toggle>
+            {/* Eraser Tool */}
+            <Button
+              variant={getButtonVariant("eraser")}
+              onClick={() => setCursorType("eraser")}
+            >
+              <Eraser className="mr-2 h-4 w-4" /> Eraser
+            </Button>
 
-        {/* Italic Toggle */}
-        <Toggle
-          pressed={isItalic}
-          onPressedChange={setIsItalic}
-          className="ml-2"
-        >
-          <Italic className="mr-2 h-4 w-4" />
-        </Toggle>
+            {/* Bold Toggle */}
+            <Toggle
+              className="bg-white"
+              pressed={isBold}
+              onPressedChange={setIsBold}
+            >
+              <Bold className="mr-2 h-4 w-full" />
+            </Toggle>
 
-        {/* Underline Toggle */}
-        <Toggle
-          pressed={isUnderline}
-          onPressedChange={setIsUnderline}
-          className="ml-2"
-        >
-          <Underline className="mr-2 h-4 w-4" />
-        </Toggle>
+            {/* Italic Toggle */}
+            <Toggle pressed={isItalic} onPressedChange={setIsItalic}>
+              <Italic className="mr-2 h-4 w-4" />
+            </Toggle>
 
-        {/* Undo Button */}
-        <Button variant="secondary" onClick={undo}>
-          <Undo2 className="mr-2 h-4 w-4" /> Undo
-        </Button>
+            {/* Underline Toggle */}
+            <Toggle pressed={isUnderline} onPressedChange={setIsUnderline}>
+              <Underline className="mr-2 h-4 w-4" />
+            </Toggle>
 
-        {/* Redo Button */}
-        <Button variant="secondary" onClick={redo}>
-          <Redo2 className="mr-2 h-4 w-4" /> Redo
-        </Button>
+            {/* Undo Button */}
+            <Button variant="secondary" onClick={undo}>
+              <Undo2 className="mr-2 h-4 w-4" /> Undo
+            </Button>
 
-        {/* Clear Canvas Button */}
-        <Button variant="destructive" onClick={clearCanvas}>
-          <Trash className="mr-2 h-4 w-4" /> Clear
-        </Button>
+            {/* Redo Button */}
+            <Button variant="secondary" onClick={redo}>
+              <Redo2 className="mr-2 h-4 w-4" /> Redo
+            </Button>
 
-        {/* Theme Toggle */}
-        <Button variant="secondary" onClick={toggleTheme}>
-          {isDarkTheme ? (
-            <Moon className="mr-2 h-4 w-4" />
-          ) : (
-            <Sun className="mr-2 h-4 w-4" />
-          )}
-          {isDarkTheme ? "Dark" : "Light"} Theme
-        </Button>
+            {/* Clear Canvas Button */}
+            <Button variant="destructive" onClick={clearCanvas}>
+              <Trash className="mr-2 h-4 w-4" /> Clear
+            </Button>
 
-        {/* Font Size Input */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="secondary">Font Size</Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-2 w-48">
-            <Input
-              type="number"
-              min={12}
-              max={72}
-              value={fontSize}
-              onChange={(e) => setFontSize(parseInt(e.target.value, 10))}
-              className="w-full"
-            />
-          </PopoverContent>
-        </Popover>
+            {/* Theme Toggle */}
+            <Button variant="secondary" onClick={toggleTheme}>
+              {isDarkTheme ? (
+                <Moon className="mr-2 h-4 w-4" />
+              ) : (
+                <Sun className="mr-2 h-4 w-4" />
+              )}
+              {isDarkTheme ? "Dark" : "Light"} Theme
+            </Button>
 
-        {/* Line Width Input */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="secondary">Line Width</Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-2 w-48">
-            <Input
-              type="number"
-              min={1}
-              max={10}
-              value={lineWidth}
-              onChange={(e) => setLineWidth(parseInt(e.target.value, 10))}
-              className="w-full"
-            />
-          </PopoverContent>
-        </Popover>
+            {/* Font Size Input */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="secondary">Font Size</Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-2 w-48">
+                <Input
+                  type="number"
+                  min={12}
+                  max={72}
+                  value={fontSize}
+                  onChange={(e) => setFontSize(parseInt(e.target.value, 10))}
+                  className="w-full"
+                />
+              </PopoverContent>
+            </Popover>
 
-        {/* Color Picker */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="secondary">Color</Button>
-          </PopoverTrigger>
-          <PopoverContent className="p-2 w-48">
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="w-full h-10 border-none"
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
+            {/* Line Width Input */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="secondary">Line Width</Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-2 w-48">
+                <Input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={lineWidth}
+                  onChange={(e) => setLineWidth(parseInt(e.target.value, 10))}
+                  className="w-full"
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Color Picker */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="secondary">Color</Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-2 w-48">
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="w-full h-10 border-none"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      </Draggable>
 
       <canvas
         ref={canvasRef}

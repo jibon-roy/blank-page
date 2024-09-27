@@ -149,8 +149,8 @@ export default function ArtBoard() {
         const ratio = window.devicePixelRatio || 1;
         canvas.width = window.innerWidth * ratio;
         canvas.height = window.innerHeight * ratio;
-        canvas.style.width = `${window.innerWidth - 15}px`;
-        canvas.style.height = `${window.innerHeight - 60}px`;
+        canvas.style.width = `${window.innerWidth}px`;
+        canvas.style.height = `${window.innerHeight}px`;
 
         // Set willReadFrequently attribute for optimization
         const ctx = canvas.getContext("2d", { willReadFrequently: true }); // Set willReadFrequently
@@ -161,6 +161,13 @@ export default function ArtBoard() {
         loadCanvasFromLocalStorage();
       }
     };
+    const getThemeFromLocalStorage = localStorage.getItem("isDarkTheme");
+    if (!getThemeFromLocalStorage) {
+      localStorage.setItem("isDarkTheme", JSON.stringify(false));
+    }
+    if (getThemeFromLocalStorage) {
+      setIsDarkTheme(JSON.parse(getThemeFromLocalStorage));
+    }
 
     updateCanvasSize();
     window.addEventListener("resize", updateCanvasSize);
@@ -169,7 +176,7 @@ export default function ArtBoard() {
     loadCanvasFromLocalStorage();
 
     return () => window.removeEventListener("resize", updateCanvasSize);
-  }, []);
+  }, [isDarkTheme]);
 
   useEffect(() => {
     const finishTyping = () => {
@@ -330,7 +337,12 @@ export default function ArtBoard() {
   };
 
   const toggleTheme = () => {
+    const getThemeFromLocalStorage = localStorage.getItem("isDarkTheme");
+    if (!getThemeFromLocalStorage) {
+      localStorage.setItem("isDarkTheme", JSON.stringify(isDarkTheme));
+    }
     setIsDarkTheme((prev) => !prev);
+    localStorage.setItem("isDarkTheme", JSON.stringify(isDarkTheme));
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
 
@@ -346,14 +358,14 @@ export default function ArtBoard() {
 
   return (
     <div
-      className={`flex flex-col h-screen w-full items-start justify-start box-border`}
+      className={`flex flex-col h-screen w-full overflow-hidden items-start justify-start box-border`}
     >
       <Draggable>
-        <div className="bg-slate-300 p-2 rounded-lg fixed top-5 left-4">
-          <p className="italic text-center mb-2 font-semibold cursor-move">
+        <div className="bg-slate-400 p-2 flex items-center flex-col rounded-lg fixed top-5 left-4">
+          <p className="italic text-center mb-1 font-semibold cursor-move">
             Blank Page
           </p>
-
+          <div className="bg-slate-300 h-1 mb-2 w-10 rounded-full"></div>
           <div className="grid  rounded-lg gap-2">
             {/* Pencil Tool */}
             <Button
@@ -406,11 +418,6 @@ export default function ArtBoard() {
             {/* Redo Button */}
             <Button variant="secondary" onClick={redo}>
               <Redo2 className="mr-2 h-4 w-4" /> Redo
-            </Button>
-
-            {/* Clear Canvas Button */}
-            <Button variant="destructive" onClick={clearCanvas}>
-              <Trash className="mr-2 h-4 w-4" /> Clear
             </Button>
 
             {/* Theme Toggle */}
@@ -471,6 +478,10 @@ export default function ArtBoard() {
                 />
               </PopoverContent>
             </Popover>
+            {/* Clear Canvas Button */}
+            <Button variant="destructive" onClick={clearCanvas}>
+              <Trash className="mr-2 h-4 w-4" /> Clear
+            </Button>
           </div>
         </div>
       </Draggable>
@@ -480,7 +491,7 @@ export default function ArtBoard() {
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={finishDrawing}
-        className="mt-2 bg-white cursor-crosshair border-2 shadow-lg"
+        className="bg-white cursor-crosshair border-2 shadow-lg"
         style={{ borderColor: color }}
       />
     </div>
